@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kuis Sejarah Indonesia UAS 25-26</title>
+    <style>
+        :root {
+            --primary-bg: #1a1a2e;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+            --btn-choice: #f0f2f5;
+            --btn-choice-hover: #e4e6e9;
+            --correct: #2ecc71;
+            --wrong: #e74c3c;
+            --timer-color: #f39c12;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--primary-bg);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        #quiz-container {
+            background: var(--card-bg);
+            width: 90%;
+            max-width: 800px;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+            text-align: center;
+        }
+        h1 { color: #16a085; margin-bottom: 25px; }
+        input[type="text"] {
+            padding: 15px;
+            width: 70%;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 18px;
+            margin-bottom: 20px;
+        }
+        #timer {
+            font-size: 32px;
+            font-weight: bold;
+            color: var(--timer-color);
+            margin-bottom: 15px;
+            background: #fdf2e9;
+            display: inline-block;
+            padding: 5px 20px;
+            border-radius: 50px;
+        }
+        #question-text {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 25px;
+            color: #2c3e50;
+            line-height: 1.4;
+        }
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        .option-btn {
+            background: var(--btn-choice);
+            border: none;
+            padding: 18px;
+            text-align: center;
+            border-radius: 12px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-weight: 500;
+        }
+        .option-btn:hover:not([disabled]) { background: var(--btn-choice-hover); transform: translateY(-2px); }
+        .correct { background-color: var(--correct) !important; color: white !important; }
+        .wrong { background-color: var(--wrong) !important; color: white !important; }
+        .hidden { display: none; }
+        #review-list { text-align: left; margin-top: 20px; max-height: 400px; overflow-y: auto; padding: 10px; border: 1px solid #eee; }
+        .review-item { margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+<div id="quiz-container">
+    <div id="start-screen">
+        <h1>UAS SEJARAH 25-26</h1>
+        <p>Masukkan Nama Anda:</p>
+        <input type="text" id="player-name" placeholder="Nama Lengkap..." autocomplete="off"><br>
+        <button class="option-btn" style="background:#16a085; color:white; padding: 15px 40px;" onclick="startQuiz()">Mulai Kuis Sekarang</button>
+    </div>
+
+    <div id="quiz-screen" class="hidden">
+        <div id="timer">30</div>
+        <div id="progress" style="margin-bottom:10px; color:#7f8c8d;">Soal 1 / 60</div>
+        <div id="question-text"></div>
+        <div class="options-grid" id="options"></div>
+    </div>
+
+    <div id="result-screen" class="hidden">
+        <h2 id="final-title">Hasil Kuis</h2>
+        <h3 id="score-text"></h3>
+        <button class="option-btn" style="background:#3498db; color:white;" onclick="location.reload()">Ulangi Kuis</button>
+        <div id="review-list"></div>
+    </div>
+</div>
+
+<script>
+const rawQuestions = [
+    {q: "Pengertian Sejarah secara umum adalah seluruh peristiwa....", a: ["Masa lampau", "Akan datang", "Aktual", "Akhir"], c: "Masa lampau"},
+    {q: "Sejarah berasal dari bahasa Arab dari kata....", a: ["Syahzaratun", "Karikatun", "Alzaabar", "Turiturian"], c: "Syahzaratun"},
+    {q: "Menurut Kuntowijoyo, tujuan rekonstruksi masa lampau adalah untuk kepentingan....", a: ["Masa yang akan datang", "Masa lalu", "Pribadi", "Sesaat"], c: "Masa yang akan datang"},
+    {q: "Ahli sejarah yang dikenal sebagai bapak Sejarah adalah....", a: ["Herodotus", "Edward Hallet Carr", "Kuntowijoyo", "Muhammad Yamin"], c: "Herodotus"},
+    {q: "Ahli sejarah yang berpendapat bahwa sejarah bercerita tentang penyebab manusia melakukan berbagai tindakan adalah....", a: ["Herodotus", "Hallet Carr", "Kuntowijoyo", "M. Yamin"], c: "Herodotus"},
+    {q: "Mengetahui peristiwa masa lampau agar dapat memperbaiki diri saat ini demi masa depan yang lebih baik merupakan....", a: ["Manfaat Sejarah", "Pengertian Sejarah", "Sumber Sejarah", "Tujuan Sejarah"], c: "Manfaat Sejarah"},
+    {q: "Sejarah dapat memberikan ilham atau inspirasi kepada generasi muda, merupakan manfaat.... Sejarah.", a: ["Inspiratif", "Edukatif", "Rekreatif", "Instruktif"], c: "Inspiratif"},
+    {q: "Berikut adalah manfaat Sejarah menurut Louis Gotschalk, kecuali....", a: ["Prinsipil", "Edukatif", "Instruktif", "Rekreatif"], c: "Prinsipil"},
+    {q: "Cerita langsung dari pelaku sejarah disebut sebagai sumber....", a: ["Lisan", "Tulisan", "Benda", "Utama"], c: "Lisan"},
+    {q: "Kritik mengenai keaslian benda Sejarah disebut kritik....", a: ["Ekstern", "Intern", "Modern", "Kreatif"], c: "Ekstern"},
+    {q: "Bentuk fisik manusia purba yang mirip dengan bentuk fisik manusia modern adalah manusia purba yang hidup pada zaman....", a: ["Aluvium", "Diluvium", "Pleistosen", "Mesozoikum"], c: "Aluvium"},
+    {q: "Berakhirnya zaman Pra-Aksara suatu bangsa ditandai dengan ditemukannya....", a: ["Tulisan", "Artefak", "Kepercayaan", "Fosil"], c: "Tulisan"},
+    {q: "Zaman hidupnya Dinosaurus disebut zaman....", a: ["Mesoszoikum", "Palaeozoikum", "Neozoikum", "Arkaeozoikum"], c: "Mesoszoikum"},
+    {q: "Tulisan pertama di Indonesia adalah tulisan berhuruf....", a: ["Pallawa", "Hieroglip", "Kawi", "Latin"], c: "Pallawa"},
+    {q: "Zaman Arkaeozoikum adalah zaman....", a: ["Terbentuknya bumi belum ada kehidupan", "Mulai adanya kehidupan", "Punahnya Dinosaurus", "Hidupnya Manusia Purba"], c: "Terbentuknya bumi belum ada kehidupan"},
+    {q: "Manusia raksasa yang ditemukan oleh Von Koenigswald diberi nama....", a: ["Meganthropus Palaeojavanicus", "Homo Soloensis", "Pitecnthropus Erectus", "Homo Wajakensis"], c: "Meganthropus Palaeojavanicus"},
+    {q: "Fosil manusia purba tertua di Indonesia adalah....", a: ["Meganthropus", "Pitecanthropus", "Homo Soloensis", "Homo Floresiensis"], c: "Meganthropus"},
+    {q: "Fosil manusia purba yang pertama ditemukan di Indonesia adalah....", a: ["Pitecanthropus Erectus", "Meganthropus", "Homo Floresiensis", "Homo Soloensis"], c: "Pitecanthropus Erectus"},
+    {q: "Manusia kera yang berjalan tegak disebut....", a: ["Pitecanthropus Erectus", "Meganthropus", "Homo Floresiensis", "Homo Soloensis"], c: "Pitecanthropus Erectus"},
+    {q: "Meganthropus Palaeojavanicus ditemukan oleh....", a: ["Von Koenigswald", "Eugene Dubois", "Van Hoven", "Van Mouried"], c: "Von Koenigswald"},
+    {q: "Isi Politik Etis yang berhubungan dengan berdirinya HIS adalah....", a: ["Edukasi", "Irigasi", "Transmigrasi", "Urbanisasi"], c: "Edukasi"},
+    {q: "Tokoh yang mengusulkan pelaksanaan Politik Etis adalah....", a: ["Van De Venter", "Van Mook", "Van Royjen", "Van Dem"], c: "Van De Venter"},
+    {q: "Kebijakan Kolonial Belanda yang berhubungan dengan lahirnya golongan terpelajar di Indonesia adalah....", a: ["Trias Van Deventer", "Tanam Paksa", "Rody", "Romusa"], c: "Trias Van Deventer"},
+    {q: "Sekolah setaraf SD bagi orang Belanda dan Eropa lainnya di Indonesia pada masa kolonial....", a: ["ELS", "HIS", "AMS", "STOVIA"], c: "ELS"},
+    {q: "Sekolah pemerintah kolonial Belanda setingkat SMP adalah....", a: ["MULO", "HIS", "ELS", "AMS"], c: "MULO"},
+    {q: "Lahirnya Nasionalisme Indonesia dipelopori oleh golongan....", a: ["Terpelajar", "Ulama", "Ningrat", "Kiyai"], c: "Terpelajar"},
+    {q: "Lahirnya Pergerakan Nasional ditandai dengan berdirinya Organisasi....", a: ["Budi Utomo", "PNI", "NU", "Indische Partij"], c: "Budi Utomo"},
+    {q: "Pergerakan Nasionalisme di India dipimpin oleh....", a: ["Mahatma Gandhi", "Sun Yat Sen", "Jose Rizal", "Jawaharlal Nehru"], c: "Mahatma Gandhi"},
+    {q: "Kebijakan pemerintah kolonial yang mendorong lahirnya golongan terpelajar adalah....", a: ["Politik Etis", "Politik Isolasi", "Tanam Paksa", "Politik Pintu Terbuka"], c: "Politik Etis"},
+    {q: "Golongan masyarakat Indonesia yang pertama sekali menyadari akan nasib buruk bangsanya akibat penjajahan adalah golongan....", a: ["Terpelajar", "Kiyai", "Tuan Tanah", "Ningrat"], c: "Terpelajar"},
+    {q: "Surat kabar yang diterbitkan organisasi Indische Partij adalah....", a: ["De Express", "Pertja Barat", "Sinar Hindia", "Darmo Kondo"], c: "De Express"},
+    {q: "Pers (surat kabar) yang dikenal sebagai pembuka mata atau pelopor kesadaran berbangsa di Indonesia adalah....", a: ["Bintang Hindia", "Pertja Barat", "De Expres", "Pewarta Prijaji"], c: "Bintang Hindia"},
+    {q: "Organisasi Pergerakan Pertama di Indonesia adalah....", a: ["Budi Utomo", "PNI", "SI", "Indische Partij"], c: "Budi Utomo"},
+    {q: "Tanggal berdirinya Budi Utomo 20 Mei diperingati sebagai hari....", a: ["Kebangkitan Nasional", "Pahlawan", "Pendidikan Nasional", "Kesaktian Pancasila"], c: "Kebangkitan Nasional"},
+    {q: "Tiga Tujuan Mulia dari Trikoro Dharmo sebagai berikut, kecuali....", a: ["Pasti", "Bakti", "Sakti", "Budi"], c: "Pasti"},
+    {q: "Sebab Trikoro Dharmo diubah menjadi Jong Java adalah....", a: ["Bersifat Jawa Sentris", "Didominasi Pelajar", "Didominasi Kiyai", "Didominasi Golongan Tua"], c: "Bersifat Jawa Sentris"},
+    {q: "Serikat Islam disusupi paham komunis yang dibawa oleh....", a: ["Snevilet dan Bergman", "Untung dan Tan Malaka", "Aidit dan Muso", "Semaun dan Darsono"], c: "Snevilet dan Bergman"},
+    {q: "Organisasi yang bertujuan modernisasi dan pemurnian Islam dari unsur unsur non-Islam adalah....", a: ["Muhammadiyah", "Serikat Islam", "Nahdatul Ulama", "Serikat Dagang Islam"], c: "Muhammadiyah"},
+    {q: "Organisasi politik yang pertama di Indonesia adalah....", a: ["Indische Partij", "PNI", "Budi Utomo", "PKI"], c: "Indische Partij"},
+    {q: "Tulisan kritik Ki Hajar Dewantara berjudul 'Als ik een Nederlander was' artinya....", a: ["Andaikan aku orang Belanda", "Indonesia Menggugat", "Andaikan aku orang Indonesia", "Indonesia berparlemen"], c: "Andaikan aku orang Belanda"},
+    {q: "Kemerdekaan Indonesia dipersiapkan melalui sidang....", a: ["BPUPKI", "MPRS", "MPR", "DPR"], c: "BPUPKI"},
+    {q: "Perdana Menteri Jepang yang memberikan janji kemerdekaan kepada Indonesia....", a: ["Koiso", "Tojo", "Imamura", "Nisihimura"], c: "Koiso"},
+    {q: "Untuk merealisasikan janji kemerdekaan kepada Indonesia, Jepang membentuk....", a: ["BPUPKI", "PPKI", "PETA", "HEIHO"], c: "BPUPKI"},
+    {q: "Tokoh yang mengusulkan dasar negara Pancasila adalah....", a: ["Ir. Soekarno", "Muhammad Yamin", "Soepomo", "Radjiman Widyodiningrat"], c: "Ir. Soekarno"},
+    {q: "Panitia Kecil yang dibentuk BPUPKI berhasil membentuk....", a: ["Piagam Jakarta", "Pemerintahan RI", "Dasar Negara", "UUD 1945"], c: "Piagam Jakarta"},
+    {q: "Karena perbedaan pendapat, Soekarno-Hatta diamankan (diculik) ke....", a: ["Rengas Dengklok", "Menteng", "Bandung", "Surabaya"], c: "Rengas Dengklok"},
+    {q: "Tokoh yang bertugas mengetik Teks Proklamasi adalah....", a: ["Sayuti Melik", "Ir. Soekarno", "Ahmad Soebarjo", "Sukarni"], c: "Sayuti Melik"},
+    {q: "Alasan Golongan Tua berpendapat Proklamasi dilaksanakan setelah sidang PPKI adalah....", a: ["Untuk menghindari pertumpahan darah", "Supaya Proklamasi Sah", "Supaya Proklamasi diakui Jepang", "Supaya Proklamasi diakui dunia"], c: "Untuk menghindari pertumpahan darah"},
+    {q: "Isi Teks Proklamasi bagian kedua merupakan buah pikiran dari....", a: ["Moh. Hatta", "Sukarni", "Ahmad Sobarjo", "Ir. Soekarno"], c: "Moh. Hatta"},
+    {q: "Akibat menyerahnya Jepang kepada Sekutu, Indonesia mengalami....", a: ["Vacuum Of Power", "Pemberontakan", "Malaise", "Peristiwa Rengas Dengklok"], c: "Vacuum Of Power"},
+    {q: "Sultan Yogyakarta yang mengakui dan tunduk kepada pemerintah RI adalah Sri Sultan Hamengkubuwono ke-....", a: ["IX", "XI", "VIII", "X"], c: "IX"},
+    {q: "Presiden dan Wakil Presiden RI yang pertama dipilih dan diangkat melalui....", a: ["Sidang PPKI", "Sidang MPR", "Sidang BPUPKI", "Sidang DPR"], c: "Sidang PPKI"},
+    {q: "Tewasnya Jenderal A.W.S Mallaby penyebab terjadinya pertempuran....", a: ["Surabaya", "Medan Area", "Bandung Lautan Api", "Ambarawa"], c: "Surabaya"},
+    {q: "Dokter yang tewas sewaktu memeriksa Cadangan Air Minum Candi adalah....", a: ["Karyadi", "Ismadi", "Slamet", "Sutomo"], p: "Karyadi"},
+    {q: "Sekutu tiba di Surabaya dengan diboncengi oleh....", a: ["NICA", "Gurka", "KNIL", "Marsose"], c: "NICA"},
+    {q: "Pembunuhan massal 40.000 rakyat Sulawesi dilakukan oleh....", a: ["Raymond Westerling", "A.W.S Mallaby", "Ted Kelly", "Philip Christison"], c: "Raymond Westerling"},
+    {q: "Berita proklamasi kemerdekaan Indonesia disebarluaskan melalui.... Kecuali.", a: ["Televisi", "Pamflet", "Berita mulut ke mulut", "Radio"], c: "Televisi"},
+    {q: "Penolakan pembentukan negara Indonesia Timur adalah sebab terjadinya perang....", a: ["Puputan di Bali", "Palagan Ambarawa", "5 hari di Semarang", "Medan Area"], c: "Puputan di Bali"},
+    {q: "Perjuangan mempertahankan kemerdekaan melalui perundingan adalah....", a: ["Diplomasi", "Bersenjata", "Puputan", "Gerilya"], c: "Diplomasi"},
+    {q: "Gabungan negara-negara boneka bentukan Belanda di Indonesia adalah....", a: ["BFO", "NEFO", "OLNEFO", "UNCLOS"], c: "BFO"}
+];
+
+let questions = [];
+let currentIdx = 0;
+let score = 0;
+let timeLeft = 30;
+let timer;
+
+function shuffle(array) {
+    return array.sort(() => Math.random() - 0.5);
+}
+
+function startQuiz() {
+    const name = document.getElementById('player-name').value;
+    if(!name) return alert("Isi nama dulu!");
+    document.getElementById('start-screen').classList.add('hidden');
+    document.getElementById('quiz-screen').classList.remove('hidden');
+    
+    questions = shuffle([...rawQuestions]).map(item => {
+        return { ...item, a: shuffle([...item.a]) };
+    });
+    
+    showQuestion();
+}
+
+function showQuestion() {
+    clearInterval(timer);
+    timeLeft = 30;
+    document.getElementById('timer').innerText = timeLeft;
+    
+    const data = questions[currentIdx];
+    document.getElementById('progress').innerText = `Soal ${currentIdx + 1} / ${questions.length}`;
+    document.getElementById('question-text').innerText = data.q;
+    
+    const optDiv = document.getElementById('options');
+    optDiv.innerHTML = "";
+    
+    data.a.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.className = "option-btn";
+        btn.innerText = opt;
+        btn.onclick = () => checkAnswer(btn, opt, data.c);
+        optDiv.appendChild(btn);
+    });
+
+    timer = setInterval(() => {
+        timeLeft--;
+        document.getElementById('timer').innerText = timeLeft;
+        if(timeLeft <= 0) {
+            clearInterval(timer);
+            revealCorrect();
+        }
+    }, 1000);
+}
+
+function checkAnswer(btn, selected, correct) {
+    clearInterval(timer);
+    const btns = document.querySelectorAll('.option-btn');
+    btns.forEach(b => b.disabled = true);
+
+    if(selected === correct) {
+        btn.classList.add('correct');
+        score++;
+    } else {
+        btn.classList.add('wrong');
+        btns.forEach(b => { if(b.innerText === correct) b.classList.add('correct'); });
+    }
+    setTimeout(next, 1500);
+}
+
+function revealCorrect() {
+    const correct = questions[currentIdx].c;
+    const btns = document.querySelectorAll('.option-btn');
+    btns.forEach(b => {
+        b.disabled = true;
+        if(b.innerText === correct) b.classList.add('correct');
+    });
+    setTimeout(next, 2000);
+}
+
+function next() {
+    currentIdx++;
+    if(currentIdx < questions.length) showQuestion();
+    else endQuiz();
+}
+
+function endQuiz() {
+    document.getElementById('quiz-screen').classList.add('hidden');
+    document.getElementById('result-screen').classList.remove('hidden');
+    const finalScore = Math.round((score / questions.length) * 100);
+    document.getElementById('score-text').innerText = `Skor Akhir: ${finalScore} (Benar: ${score}/${questions.length})`;
+    
+    const review = document.getElementById('review-list');
+    questions.forEach(q => {
+        review.innerHTML += `<div class="review-item"><b>${q.q}</b><br><span style="color:green">Jawaban Benar: ${q.c}</span></div>`;
+    });
+}
+</script>
+</body>
+</html>
